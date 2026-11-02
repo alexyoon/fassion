@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARDEN — Dressed for the moment</title>
+<style>
+  :root{
+    --ink:#111; --muted:#777; --line:#e4e4e4;
+    --stage:#e8ecef; --card:#ececec; --accent:#e0242f;
+    --ease:cubic-bezier(.65,.02,.25,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"Helvetica Neue",Helvetica,Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}
+
+  /* ---------- Header ---------- */
+  header{position:relative;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
+  .topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:18px 34px 8px}
+  .dept{display:flex;gap:14px;font-size:11px;font-weight:700;letter-spacing:.04em}
+  .dept a{opacity:.45;transition:opacity .2s}
+  .dept a.on,.dept a:hover{opacity:1}
+  .logo{font-size:22px;font-weight:500;letter-spacing:.14em}
+  .util{display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:11px;font-weight:700;letter-spacing:.04em}
+  .util svg{width:15px;height:15px;display:block}
+  .cart-count{display:inline-block;transition:transform .3s}
+  .cart-count.bump{transform:scale(1.5)}
+  nav.cats{display:flex;justify-content:center;gap:30px;font-size:12px;color:#555;padding:6px 0 14px}
+  nav.cats a{position:relative}
+  nav.cats a::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:1px;background:#111;transform:scaleX(0);transition:transform .25s}
+  nav.cats a:hover::after{transform:scaleX(1)}
+
+  /* ---------- Hero ---------- */
+  .hero{display:grid;grid-template-columns:1fr minmax(240px,26%);height:calc(100vh - 86px);min-height:560px}
+  .stage{position:relative;overflow:hidden;background:var(--stage)}
+  .copy{position:absolute;left:5.5%;top:8%;z-index:12;max-width:460px}
+  .copy h1{font-size:clamp(18px,1.9vw,26px);font-weight:700;letter-spacing:.01em;margin-bottom:12px}
+  .copy p{font-size:12.5px;line-height:1.55;color:#888}
+  .look{position:absolute;left:5.5%;bottom:7%;z-index:12}
+  .look .num{font-size:clamp(16px,1.5vw,21px);font-weight:500;letter-spacing:.02em}
+  .look .num b{font-weight:500;display:inline-block;transition:transform .5s var(--ease),opacity .5s}
+  .look .sub{margin-top:8px;font-size:10.5px;letter-spacing:.08em;color:#888;transition:opacity .5s}
+  .look.swap .num b,.look.swap .sub{opacity:0}
+  .look.swap .num b{transform:translateY(8px)}
+
+  .fig{position:absolute;bottom:0;height:86%;aspect-ratio:200/520;transform-origin:50% 100%;
+       transition:left 1.15s var(--ease),transform 1.15s var(--ease),filter 1.15s var(--ease),opacity 1.15s var(--ease),bottom 1.15s var(--ease);
+       will-change:transform,filter,left;pointer-events:none}
+  .fig svg,.fig img{width:100%;height:100%;display:block;object-fit:contain;object-position:bottom}
+  .fig.front{pointer-events:auto;cursor:pointer}
+  .fig.noanim{transition:none!important}
+
+  .hotspot{position:absolute;left:47%;top:30%;width:14px;height:14px;margin:-7px;border-radius:50%;
+           background:#fff;border:3px solid var(--accent);opacity:0;transition:opacity .4s .6s}
+  .hotspot::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1.6s infinite}
+  .fig.front .hotspot{opacity:1}
+  @keyframes pulse{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+
+  .hint{position:absolute;right:20px;bottom:18px;z-index:12;font-size:10.5px;letter-spacing:.08em;color:#999;display:flex;align-items:center;gap:10px}
+  .hint button{width:30px;height:30px;border:1px solid #cfd4d8;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.5)}
+  .hint button:hover{background:#fff}
+  .progress{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(0,0,0,.06);z-index:12}
+  .progress i{display:block;height:100%;width:0;background:#111}
+
+  /* ---------- Product rail ---------- */
+  .rail{position:relative;overflow:hidden;background:#f3f3f3;border-left:1px solid var(--line)}
+  .track{position:absolute;left:0;right:0;top:0;transition:transform 1.15s var(--ease)}
+  .track.noanim{transition:none}
+  .card{position:relative;height:var(--cardH,300px);background:var(--card);border-bottom:6px solid #f7f7f7;padding:16px 18px 16px;display:flex;flex-direction:column}
+  .card .img{flex:1;display:grid;place-items:center;min-height:0}
+  .card .img svg{width:78%;max-height:100%;transition:transform .5s var(--ease)}
+  .card:hover .img svg{transform:scale(1.06)}
+  .card h3{font-size:12px;font-weight:600;letter-spacing:.03em;margin-top:6px}
+  .card .meta{font-size:10.5px;color:#888;margin-top:4px}
+  .card .row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px}
+  .card .add{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#666;font-size:17px;line-height:1;transition:background .2s,color .2s}
+  .card .add:hover{background:#111;color:#fff}
+  .card .wish{position:absolute;left:14px;top:12px;width:20px;height:20px;color:#444}
+  .card .wish svg{width:14px;height:14px}
+  .card .wish.on svg path{fill:var(--accent);stroke:var(--accent)}
+  .card.active{background:#e9e9e9}
+
+  footer{padding:26px 34px;font-size:11px;color:#999;display:flex;justify-content:space-between;border-top:1px solid var(--line)}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#111;color:#fff;font-size:12px;padding:12px 18px;border-radius:2px;opacity:0;transition:.35s;z-index:50;pointer-events:none}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:860px){
+    .topbar{grid-template-columns:auto 1fr auto;padding:14px 16px 6px}
+    .dept{display:none}
+    .logo{font-size:18px}
+    .util .txt{display:none}
+    nav.cats{justify-content:flex-start;overflow-x:auto;gap:20px;padding:6px 16px 12px;white-space:nowrap;scrollbar-width:none}
+    .hero{grid-template-columns:1fr;height:auto;min-height:0}
+    .stage{height:72vh;min-height:470px}
+    .fig{height:66%}
+    .hint span{display:none}
+    .copy p br{display:none}
+    .copy{top:6%;max-width:72%}
+    .rail{height:250px;border-left:0;border-top:1px solid var(--line)}
+    .track{display:flex;height:100%;bottom:0}
+    .card{height:100%!important;width:var(--cardW,180px);flex:0 0 var(--cardW,180px);border-bottom:0;border-right:6px solid #f7f7f7}
+    footer{flex-direction:column;gap:6px;padding:20px 16px}
+  }
+</style>
+</head>
+<body>
+
+<!-- 공용 그라데이션(입체감) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="shade" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity=".22"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".26"/>
+    </linearGradient>
+    <linearGradient id="vshade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".18"/>
+    </linearGradient>
+    <radialGradient id="ground"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+  </defs>
+</svg>
+
+<header>
+  <div class="topbar">
+    <div class="dept">
+      <a href="#" class="on">WOMENSWEAR</a><a href="#">MENSWEAR</a><a href="#">KIDSWEAR</a>
+    </div>
+    <a href="#" class="logo">ARDEN</a>
+    <div class="util">
+      <a href="#" class="txt">LOGIN</a>
+      <a href="#" aria-label="검색"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></a>
+      <a href="#" aria-label="위시리스트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg></a>
+      <a href="#" class="cart">CART (<span class="cart-count" id="cartCount">0</span>)</a>
+    </div>
+  </div>
+  <nav class="cats">
+    <a href="#">Sale</a><a href="#">New in</a><a href="#">Brands</a><a href="#">Clothing</a><a href="#">Shoes</a><a href="#">Bags</a><a href="#">Accessories</a><a href="#">Watches</a><a href="#">Lifestyle</a>
+  </nav>
+</header>
+
+<main class="hero">
+  <section class="stage" id="stage">
+    <div class="copy">
+      <h1>DRESSED FOR THE MOMENT.</h1>
+      <p>Refined essentials made for warm days, late evenings, <br>and everywhere in between.</p>
+    </div>
+    <div class="look" id="look">
+      <div class="num">LOOK &nbsp;|&nbsp;<b id="lookNum">1</b></div>
+      <div class="sub" id="lookSub">EASY WEEKEND</div>
+    </div>
+    <div class="hint">
+      <span>CLICK THE LOOK</span>
+      <button id="prevBtn" aria-label="이전"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button id="nextBtn" aria-label="다음"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+  </section>
+
+  <aside class="rail" id="rail"><div class="track" id="track"></div></aside>
+</main>
+
+<footer>
+  <span>© 2026 ARDEN. All rights reserved.</span>
+  <span>Free shipping worldwide on orders over $150</span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   1) 룩 데이터 — photo 에 누끼(PNG) 경로를 넣으면 일러스트 대신 사진이 나옵니다.
+      예) photo:"images/look1.png"
+   ========================================================= */
+const LOOKS = [
+  { name:"EASY WEEKEND", photo:"",
+    fig:{skin:"#e7b894",hair:"#3a2a20",hairStyle:"short",beard:true,
+         top:{type:"tee",color:"#efe9df"}, bottom:{type:"pants",color:"#4a3428"},
+         shoes:{type:"sneaker",color:"#f4f4f2"}, cap:"#8a4a28", pose:"relaxed"},
+    product:{name:"VINTAGE CORDUROY CAP",meta:"Brown / Cotton",price:19,art:"cap"} },
+  { name:"EFFORTLESSLY REFINED", photo:"",
+    fig:{skin:"#e2b391",hair:"#1d1714",hairStyle:"curly",
+         top:{type:"blazer",color:"#16171a",inner:"#202125"}, bottom:{type:"pants",color:"#16171a",tucked:true},
+         shoes:{type:"dress",color:"#0d0d0d"}, pose:"lapel"},
+    product:{name:"OPERA EAU DE PARFUM",meta:"Red / 50 ML",price:85,art:"perfume"} },
+  { name:"OFF-DUTY TRAVEL", photo:"",
+    fig:{skin:"#dca883",hair:"#5a3f2c",hairStyle:"swept",beard:true,
+         top:{type:"open",color:"#e6dccb",inner:"#f7f5f0"}, bottom:{type:"shorts",color:"#6f6a4c"},
+         shoes:{type:"sneaker",color:"#f4f4f2"}, glasses:true, backpack:"#232838", pose:"relaxed"},
+    product:{name:"RECTANGULAR SUNGLASSES",meta:"Black / Gold",price:95,art:"glasses"} },
+  { name:"COASTAL EASE", photo:"",
+    fig:{skin:"#c98f68",hair:"#2a1d16",hairStyle:"swept",beard:true,
+         top:{type:"polo",color:"#97a387"}, bottom:{type:"shorts",color:"#efeae0"},
+         shoes:{type:"sneaker",color:"#f4f4f2"}, pose:"relaxed"},
+    product:{name:"TEXTURED KNIT POLO",meta:"Sage Green",price:89,art:"polo"} },
+  { name:"SUMMER EVENING", photo:"",
+    fig:{skin:"#d39c76",hair:"#221812",hairStyle:"short",beard:true,
+         top:{type:"shirt",color:"#a7728f",short:true}, bottom:{type:"pants",color:"#e3d8c6"},
+         shoes:{type:"loafer",color:"#b07a4e"}, glasses:true, pose:"relaxed"},
+    product:{name:"TAILORED SUMMER PANTS",meta:"Stone",price:110,art:"pants"} },
+  { name:"QUIET LUXURY", photo:"",
+    fig:{skin:"#e0aa86",hair:"#3a2618",hairStyle:"swept",
+         top:{type:"polo",color:"#f1ece2",knit:true}, bottom:{type:"pants",color:"#ece4d5",tucked:true},
+         shoes:{type:"loafer",color:"#a8693e"}, pose:"pockets"},
+    product:{name:"SUEDE PENNY LOAFERS",meta:"Sand",price:165,art:"loafer"} },
+  { name:"CITY CLASSIC", photo:"",
+    fig:{skin:"#d8a27c",hair:"#241912",hairStyle:"short",
+         top:{type:"shirt",color:"#f5f6f8"}, bottom:{type:"pants",color:"#cdb998"},
+         shoes:{type:"sneaker",color:"#f4f4f2"}, glasses:true, watch:true, pose:"cuff"},
+    product:{name:"CHRONOGRAPH LEATHER WATCH",meta:"Navy / Brown",price:320,art:"watch"} },
+];
+
+/* =========================================================
+   2) 인물 일러스트 (SVG)
+   ========================================================= */
+function shadeHex(hex, amt){ // amt -1..1
+  const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255;
+  const t=amt<0?0:255, p=Math.abs(amt);
+  r=Math.round((t-r)*p+r); g=Math.round((t-g)*p+g); b=Math.round((t-b)*p+b);
+  return "#"+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+function P(d,fill,extra=""){ return `<path d="${d}" fill="${fill}" ${extra}/><path d="${d}" fill="url(#shade)" ${extra}/>`; }
+function S(d,color,w){ // stroked limb
+  return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`+
+         `<path d="${d}" fill="none" stroke="url(#shade)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function lerp(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]}
+function poly(pts){return "M"+pts.map(p=>p.map(v=>v.toFixed(1)).join(" ")).join(" L")}
+
+function arm(side,pose,o){
+  const L=side==="L";
+  const sh=L?[63,104]:[137,104];
+  let el,wr;
+  if(pose==="pockets"){ el=L?[50,176]:[150,176]; wr=L?[68,236]:[132,236]; }
+  else if(pose==="lapel" && !L){ el=[146,178]; wr=[120,128]; }
+  else if(pose==="lapel" && L){ el=[54,178]; wr=[70,238]; }
+  else if(pose==="cuff" && !L){ el=[146,172]; wr=[112,190]; }
+  else { el=L?[53,180]:[147,180]; wr=L?[57,254]:[143,254]; }
+  const top=o.top, skin=o.skin;
+  let out="";
+  const full=poly([sh,el,wr]);
+  out+=S(full,skin,14);
+  // sleeve
+  let sleeve, sw=19;
+  const shortSleeve = top.type==="tee"||top.type==="polo"||top.short;
+  if(shortSleeve){ sleeve=poly([sh,lerp(sh,el,.58)]); }
+  else { sleeve=poly([sh,el,lerp(el,wr,.86)]); }
+  let col=top.color;
+  out+=S(sleeve,col,sw);
+  // hand (hidden when in pocket)
+  if(pose==="pockets"){ out+=`<ellipse cx="${wr[0]}" cy="${wr[1]-2}" rx="6" ry="4" fill="${shadeHex(skin,-.15)}"/>`; }
+  else{
+    out+=`<ellipse cx="${wr[0]}" cy="${wr[1]+5}" rx="7" ry="9" fill="${skin}"/><ellipse cx="${wr[0]}" cy="${wr[1]+5}" rx="7" ry="9" fill="url(#shade)"/>`;
+  }
+  if(o.watch && L){ out+=`<rect x="${wr[0]-8}" y="${wr[1]-10}" width="16" height="7" rx="2" fill="#4b2e1c"/><circle cx="${wr[0]}" cy="${wr[1]-6.5}" r="4.2" fill="#1d2b55" stroke="#c9c9c9" stroke-width="1"/>`; }
+  return out;
+}
+
+function figureSVG(o){
+  const t=o.top, b=o.bottom, sk=o.skin;
+  let s=`<svg viewBox="0 0 200 520" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<ellipse cx="100" cy="502" rx="62" ry="7" fill="url(#ground)"/>`;
+  // backpack body (behind)
+  if(o.backpack){ s+=P("M128 112 Q150 108 158 122 L162 206 Q160 216 146 216 L132 214 Z",o.backpack); }
+
+  // legs / bottoms
+  if(b.type==="shorts"){
+    s+=P("M74 330 L96 330 L95 472 L83 474 Z",sk);
+    s+=P("M104 330 L126 330 L124 472 L111 474 Z",sk);
+    s+=P("M67 248 L133 248 L136 334 L104 338 L100 296 L96 338 L64 334 Z",b.color);
+    s+=`<path d="M100 252 L100 296" stroke="${shadeHex(b.color,-.25)}" stroke-width="1.2"/>`;
+  }else{
+    s+=P("M68 248 L132 248 L131 300 L128 472 L109 475 L101 302 L99 302 L91 475 L72 472 L69 300 Z",b.color);
+    s+=`<path d="M84 300 L82 470 M116 300 L118 470" stroke="${shadeHex(b.color,-.18)}" stroke-width="1" opacity=".7"/>`;
+  }
+  // shoes
+  const sc=o.shoes.color;
+  const shoeL="M73 466 L93 466 L95 488 Q96 500 86 500 L64 500 Q56 499 60 491 Q66 483 73 478 Z";
+  const shoeR="M107 466 L127 466 L127 478 Q134 483 140 491 Q144 499 136 500 L114 500 Q104 500 105 488 Z";
+  s+=P(shoeL,sc)+P(shoeR,sc);
+  if(o.shoes.type==="sneaker"){ s+=`<path d="M59 496 L95 496 M105 496 L141 496" stroke="#d7d7d3" stroke-width="4"/>`; }
+  if(o.shoes.type==="loafer"){ s+=`<path d="M66 484 L84 484 M116 484 L134 484" stroke="${shadeHex(sc,-.35)}" stroke-width="1.6"/>`; }
+  if(o.shoes.type==="dress"){ s+=`<path d="M60 497 L94 497 M106 497 L140 497" stroke="#000" stroke-width="3"/>`; }
+
+  // neck
+  s+=P("M91 68 L109 68 L110 94 Q100 100 90 94 Z",shadeHex(sk,-.08));
+
+  // torso
+  const tc=t.color;
+  if(t.type==="open"){
+    s+=P("M84 92 Q100 102 116 92 L124 112 L127 262 L73 262 L76 112 Z",t.inner);
+    s+=P("M64 96 L86 88 L93 140 L90 270 L60 270 L55 116 Q55 101 64 96 Z",tc);
+    s+=P("M136 96 L114 88 L107 140 L110 270 L140 270 L145 116 Q145 101 136 96 Z",tc);
+    s+=`<path d="M86 88 L95 120 L93 140 M114 88 L105 120 L107 140" fill="none" stroke="${shadeHex(tc,-.2)}" stroke-width="1.5"/>`;
+  }else{
+    const bottomY = t.type==="blazer"?280 : (b.tucked?252:264);
+    s+=P(`M84 88 Q100 96 116 88 L137 96 Q145 101 145 116 L138 ${bottomY} L62 ${bottomY} L55 116 Q55 101 63 96 Z`,tc);
+    if(t.type==="blazer"){
+      s+=P("M88 90 L100 156 L112 90 Q100 98 88 90 Z",t.inner);
+      s+=`<path d="M87 90 L80 124 L100 160 Z M113 90 L120 124 L100 160 Z" fill="${shadeHex(tc,.08)}"/>`;
+      s+=`<path d="M100 160 L100 280" stroke="#000" stroke-width="1.2" opacity=".6"/><circle cx="103" cy="196" r="2" fill="#2a2a2a"/>`;
+      s+=`<path d="M70 232 L88 232 M112 232 L130 232" stroke="#000" stroke-width="1.2" opacity=".5"/>`;
+    }
+    if(t.type==="tee"){ s+=`<path d="M86 90 Q100 101 114 90" fill="none" stroke="${shadeHex(tc,-.18)}" stroke-width="3"/>`; }
+    if(t.type==="polo"){
+      s+=`<path d="M86 88 L98 106 L90 110 Z M114 88 L102 106 L110 110 Z" fill="${shadeHex(tc,-.08)}"/>`;
+      s+=`<path d="M100 100 L100 134" stroke="${shadeHex(tc,-.25)}" stroke-width="1.4"/><circle cx="100" cy="112" r="1.4" fill="${shadeHex(tc,-.35)}"/><circle cx="100" cy="124" r="1.4" fill="${shadeHex(tc,-.35)}"/>`;
+      if(t.knit){ let k=""; for(let y=140;y<bottomY;y+=9){k+=`M60 ${y} L140 ${y} `;} s+=`<path d="${k}" stroke="${shadeHex(tc,-.08)}" stroke-width="1" opacity=".6"/>`; }
+    }
+    if(t.type==="shirt"){
+      s+=`<path d="M85 86 L99 104 L90 112 L82 96 Z M115 86 L101 104 L110 112 L118 96 Z" fill="${shadeHex(tc,.1)}" stroke="${shadeHex(tc,-.2)}" stroke-width=".8"/>`;
+      s+=`<path d="M100 104 L100 ${bottomY}" stroke="${shadeHex(tc,-.2)}" stroke-width="1"/>`;
+      for(let y=122;y<bottomY-8;y+=26) s+=`<circle cx="102.5" cy="${y}" r="1.5" fill="${shadeHex(tc,-.3)}"/>`;
+    }
+    if(b.tucked && t.type!=="blazer"){ s+=`<rect x="64" y="246" width="72" height="7" fill="#3a2a1e"/><rect x="96" y="246" width="9" height="7" fill="#b9a27a"/>`; }
+  }
+  if(o.backpack){ s+=`<path d="M126 92 Q132 140 128 214" fill="none" stroke="${o.backpack}" stroke-width="7" stroke-linecap="round"/>`; }
+
+  // arms
+  s+=arm("L",o.pose,o)+arm("R",o.pose,o);
+
+  // head
+  s+=`<ellipse cx="85" cy="52" rx="3.5" ry="6" fill="${shadeHex(sk,-.08)}"/><ellipse cx="115" cy="52" rx="3.5" ry="6" fill="${shadeHex(sk,-.12)}"/>`;
+  s+=P("M100 30 Q116 30 116 50 Q116 66 110 72 Q105 78 100 78 Q95 78 90 72 Q84 66 84 50 Q84 30 100 30 Z",sk);
+  s+=`<path d="M99 52 Q97 60 100 62" fill="none" stroke="${shadeHex(sk,-.2)}" stroke-width="1.2"/>`;
+  if(o.beard){ s+=`<path d="M86 58 Q88 74 100 78 Q112 74 114 58 Q112 70 100 72 Q88 70 86 58 Z" fill="${o.hair}" opacity=".55"/>`; }
+  else { s+=`<path d="M95 68 Q100 70 105 68" fill="none" stroke="${shadeHex(sk,-.25)}" stroke-width="1"/>`; }
+  // hair
+  const h=o.hair;
+  if(o.cap){
+    s+=P("M83 48 Q82 22 100 22 Q118 22 117 48 Q100 42 83 48 Z",o.cap);
+    s+=`<path d="M83 46 Q100 40 120 47 Q122 52 112 52 Q100 47 83 50 Z" fill="${shadeHex(o.cap,-.2)}"/>`;
+    s+=`<rect x="93" y="31" width="14" height="6" fill="#f0e6d6" opacity=".8"/>`;
+    s+=`<path d="M84 48 Q84 56 86 58 M116 48 Q116 56 114 58" stroke="${h}" stroke-width="3"/>`;
+  }else if(o.hairStyle==="curly"){
+    let c=""; [[86,40,9],[94,30,10],[106,29,10],[115,38,9],[100,24,8],[83,50,6],[117,49,6]].forEach(a=>c+=`<circle cx="${a[0]}" cy="${a[1]}" r="${a[2]}" fill="${h}"/>`);
+    s+=c;
+  }else if(o.hairStyle==="swept"){
+    s+=P("M83 52 Q80 24 102 22 Q122 22 118 48 Q116 36 104 34 Q92 36 88 44 Q86 48 83 52 Z",h);
+  }else{
+    s+=P("M84 50 Q81 28 100 27 Q119 27 116 50 Q113 38 100 37 Q88 38 84 50 Z",h);
+  }
+  if(o.glasses){
+    s+=`<path d="M87 48 h11 v6 q0 3 -3 3 h-6 q-2 0 -2 -3z M102 48 h11 v6 q0 3 -3 3 h-6 q-2 0 -2 -3z" fill="#111"/><path d="M98 50 h4 M85 49 h2 M113 49 h2" stroke="#b8963c" stroke-width="1.4"/>`;
+  }
+  s+=`</svg>`;
+  return s;
+}
+
+/* =========================================================
+   3) 상품 일러스트 (SVG)
+   ========================================================= */
+const ART = {
+  cap:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="140" rx="70" ry="6" fill="url(#ground)"/>
+    <path d="M42 104 Q40 40 100 36 Q160 40 158 104 Z" fill="#8a4a28"/><path d="M42 104 Q40 40 100 36 Q160 40 158 104 Z" fill="url(#shade)"/>
+    <path d="M100 36 L100 104 M70 44 Q60 70 62 104 M130 44 Q140 70 138 104" stroke="#6e3a1f" stroke-width="1.2" fill="none"/>
+    <path d="M40 102 Q100 92 162 102 Q190 112 178 126 Q140 114 100 116 Q60 114 22 126 Q12 112 40 102 Z" fill="#7a3f22"/>
+    <circle cx="100" cy="37" r="4" fill="#6e3a1f"/>
+    <text x="100" y="78" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="17" fill="#f2e7d4" letter-spacing="1">HEART</text>
+    <text x="100" y="60" text-anchor="middle" font-family="Brush Script MT,cursive" font-size="11" fill="#f2e7d4">with all</text></svg>`,
+  perfume:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="150" rx="40" ry="5" fill="url(#ground)"/>
+    <rect x="88" y="8" width="24" height="26" rx="2" fill="#141414"/><rect x="94" y="32" width="12" height="8" fill="#b9b9b9"/>
+    <rect x="70" y="40" width="60" height="108" rx="4" fill="#b3171f"/><rect x="70" y="40" width="60" height="108" rx="4" fill="url(#shade)"/>
+    <rect x="80" y="84" width="40" height="30" fill="#f4efe8"/><text x="100" y="97" text-anchor="middle" font-size="6" font-family="Helvetica" fill="#333">ARDEN</text><text x="100" y="106" text-anchor="middle" font-size="4.5" font-family="Helvetica" fill="#666">OPERA</text></svg>`,
+  glasses:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="118" rx="80" ry="5" fill="url(#ground)"/>
+    <path d="M18 62 Q16 56 24 56 L84 56 Q90 56 89 63 L85 90 Q83 100 72 100 L34 100 Q22 100 20 90 Z" fill="#141414"/>
+    <path d="M182 62 Q184 56 176 56 L116 56 Q110 56 111 63 L115 90 Q117 100 128 100 L166 100 Q178 100 180 90 Z" fill="#141414"/>
+    <path d="M26 62 L60 62 L40 92 Z M118 62 L150 62 L130 92 Z" fill="#fff" opacity=".08"/>
+    <path d="M89 62 Q100 54 111 62" fill="none" stroke="#c8a24a" stroke-width="3"/>
+    <path d="M18 60 L8 58 M182 60 L192 58" stroke="#c8a24a" stroke-width="3"/></svg>`,
+  polo:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="152" rx="60" ry="5" fill="url(#ground)"/>
+    <path d="M78 14 L58 22 L26 46 L40 76 L60 64 L60 148 L140 148 L140 64 L160 76 L174 46 L142 22 L122 14 Q100 24 78 14 Z" fill="#97a387"/>
+    <path d="M78 14 L58 22 L26 46 L40 76 L60 64 L60 148 L140 148 L140 64 L160 76 L174 46 L142 22 L122 14 Q100 24 78 14 Z" fill="url(#shade)"/>
+    <path d="M78 14 L96 36 L86 42 L74 20 Z M122 14 L104 36 L114 42 L126 20 Z" fill="#87937a"/>
+    <path d="M100 30 L100 60" stroke="#76816a" stroke-width="1.5"/><circle cx="100" cy="42" r="1.8" fill="#5f6955"/><circle cx="100" cy="53" r="1.8" fill="#5f6955"/>
+    <path d="M62 80 H138 M62 90 H138 M62 100 H138 M62 110 H138 M62 120 H138 M62 130 H138 M62 140 H138" stroke="#8b977c" stroke-width="1" opacity=".7"/></svg>`,
+  pants:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="154" rx="40" ry="4" fill="url(#ground)"/>
+    <path d="M74 6 L126 6 L130 40 L124 150 L104 150 L101 46 L99 46 L96 150 L76 150 L70 40 Z" fill="#e3d8c6"/>
+    <path d="M74 6 L126 6 L130 40 L124 150 L104 150 L101 46 L99 46 L96 150 L76 150 L70 40 Z" fill="url(#shade)"/>
+    <rect x="74" y="6" width="52" height="8" fill="#d6c9b4"/><path d="M86 46 L86 148 M114 46 L114 148" stroke="#cfc2ab" stroke-width="1"/></svg>`,
+  loafer:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="116" rx="84" ry="6" fill="url(#ground)"/>
+    <path d="M20 106 Q14 90 34 84 L80 74 Q104 60 132 64 Q156 66 176 82 Q188 92 184 104 Q182 112 168 112 L30 112 Q22 112 20 106 Z" fill="#b07a4e"/>
+    <path d="M20 106 Q14 90 34 84 L80 74 Q104 60 132 64 Q156 66 176 82 Q188 92 184 104 Q182 112 168 112 L30 112 Q22 112 20 106 Z" fill="url(#vshade)"/>
+    <path d="M96 72 Q126 60 160 76 Q130 84 96 80 Z" fill="#9a6640"/><path d="M110 74 L146 74" stroke="#6e4426" stroke-width="2"/>
+    <path d="M18 108 L186 108" stroke="#5a3a24" stroke-width="5" stroke-linecap="round"/></svg>`,
+  watch:`<svg viewBox="0 0 200 160"><ellipse cx="100" cy="154" rx="40" ry="4" fill="url(#ground)"/>
+    <rect x="80" y="2" width="40" height="44" rx="6" fill="#4b2e1c"/><rect x="80" y="114" width="40" height="44" rx="6" fill="#4b2e1c"/>
+    <circle cx="100" cy="80" r="44" fill="#cfcfcf"/><circle cx="100" cy="80" r="38" fill="#1d2b55"/>
+    <circle cx="100" cy="80" r="38" fill="url(#shade)"/>
+    <circle cx="86" cy="80" r="8" fill="none" stroke="#9aa6c8" stroke-width="1"/><circle cx="114" cy="80" r="8" fill="none" stroke="#9aa6c8" stroke-width="1"/><circle cx="100" cy="96" r="8" fill="none" stroke="#9aa6c8" stroke-width="1"/>
+    <path d="M100 80 L100 50 M100 80 L120 70" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    <rect x="144" y="74" width="8" height="12" rx="2" fill="#bdbdbd"/></svg>`
+};
+
+/* =========================================================
+   4) 화면 구성 & 동작
+   ========================================================= */
+const stage=document.getElementById("stage"), track=document.getElementById("track"), rail=document.getElementById("rail");
+const N=LOOKS.length;
+const heart='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>';
+
+// figures
+const figs = LOOKS.map((L,i)=>{
+  const d=document.createElement("div"); d.className="fig";
+  d.innerHTML = (L.photo ? `<img src="${L.photo}" alt="LOOK ${i+1}" onerror="this.outerHTML=figureSVG(LOOKS[${i}].fig)">` : figureSVG(L.fig)) + `<span class="hotspot"></span>`;
+  d.addEventListener("click",()=>{ if(d.classList.contains("front")) go(1,true); });
+  stage.appendChild(d); return d;
+});
+
+// cards (2 copies for seamless loop)
+function cardHTML(L,i){
+  const p=L.product;
+  return `<div class="card" data-i="${i}">
+    <button class="wish" aria-label="찜">${heart}</button>
+    <div class="img">${ART[p.art]}</div>
+    <h3>${p.name}</h3><div class="meta">${p.meta}</div>
+    <div class="row"><span>$${p.price}</span><button class="add" aria-label="장바구니 담기">+</button></div></div>`;
+}
+track.innerHTML = LOOKS.map(cardHTML).join("") + LOOKS.map(cardHTML).join("");
+const cards=[...track.children];
+let cart=0;
+track.addEventListener("click",e=>{
+  const w=e.target.closest(".wish"); if(w){ w.classList.toggle("on"); toast(w.classList.contains("on")?"위시리스트에 담았습니다":"위시리스트에서 뺐습니다"); return; }
+  const a=e.target.closest(".add");
+  if(a){ const p=LOOKS[a.closest(".card").dataset.i].product; cart++; const c=document.getElementById("cartCount"); c.textContent=cart; c.classList.add("bump"); setTimeout(()=>c.classList.remove("bump"),300); toast(`${p.name} — 장바구니에 담았습니다`); }
+});
+let tt; function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),1800);}
+
+// 줄 서 있는 위치 (slot 0 = 맨 앞)
+const SLOTS = [
+  {left:58, s:1.00, blur:0,   op:1,   b:0},
+  {left:39, s:.80,  blur:2.2, op:.95, b:6},
+  {left:26, s:.66,  blur:3.6, op:.9,  b:11},
+  {left:16, s:.56,  blur:4.6, op:.85, b:14.5},
+  {left:8,  s:.48,  blur:5.4, op:.75, b:17},
+  {left:2,  s:.40,  blur:6,   op:0,   b:19},   // 뒤에서 대기
+];
+const SLOTS_M = [
+  {left:64, s:1.00, blur:0,   op:1,   b:2},
+  {left:40, s:.78,  blur:2,   op:.95, b:7},
+  {left:24, s:.62,  blur:3.2, op:.9,  b:11},
+  {left:12, s:.52,  blur:4.2, op:.8,  b:14},
+  {left:4,  s:.44,  blur:5,   op:.6,  b:16},
+  {left:0,  s:.38,  blur:6,   op:0,   b:18},
+];
+const EXIT = {left:104, s:1.02, blur:0, op:0, b:0};
+const mobile=()=>innerWidth<=860;
+
+let t=0; // 진행 카운터(무한)
+function layout(instantSet){
+  const idx=((t%N)+N)%N;
+  figs.forEach((f,i)=>{
+    const slot=((i-idx)%N+N)%N;
+    const SL=mobile()?SLOTS_M:SLOTS; let p = slot===N-1 ? EXIT : (SL[slot]||SL[SL.length-1]);
+    if(instantSet && instantSet.has(i)) f.classList.add("noanim");
+    const sc=p.s*(mobile()?1:1);
+    f.style.left=p.left+"%";
+    f.style.bottom=p.b+"%";
+    f.style.transform=`translateX(-50%) scale(${sc})`;
+    f.style.filter=p.blur?`blur(${p.blur}px)`:"none";
+    f.style.opacity=p.op;
+    f.style.zIndex=10-Math.min(slot,9) - (slot===N-1?5:0);
+    f.classList.toggle("front",slot===0);
+  });
+  if(instantSet){ requestAnimationFrame(()=>requestAnimationFrame(()=>figs.forEach(f=>f.classList.remove("noanim")))); }
+  // rail
+  const k=((t%N)+N)%N;
+  const horizontal=mobile();
+  const size = horizontal ? cards[0].offsetWidth+6 : cards[0].offsetHeight;
+  track.style.transform = horizontal ? `translateX(${-k*size}px)` : `translateY(${-k*size}px)`;
+  cards.forEach((c,i)=>c.classList.toggle("active",i%N===k));
+  // label
+  const lk=document.getElementById("look"); lk.classList.add("swap");
+  setTimeout(()=>{ document.getElementById("lookNum").textContent=k+1; document.getElementById("lookSub").textContent=LOOKS[k].name; lk.classList.remove("swap"); },380);
+}
+
+let prevK=0;
+function go(dir,user){
+  const before=((t%N)+N)%N;
+  t+=dir;
+  const k=((t%N)+N)%N;
+  // 레일 무한 루프: 마지막→처음으로 넘어갈 때 복제본으로 이동 후 순간 복귀
+  const horizontal=mobile();
+  const size = horizontal ? cards[0].offsetWidth+6 : cards[0].offsetHeight;
+  // 뒤에서 앞으로 순간이동해야 하는 인물(대기열 끝 ↔ 퇴장)은 애니메이션 없이 이동
+  const jump=new Set();
+  figs.forEach((f,i)=>{
+    const sOld=((i-before)%N+N)%N, sNew=((i-k)%N+N)%N;
+    if((dir>0 && sOld===N-1) || (dir<0 && sNew===N-1)) jump.add(i);
+  });
+  if(dir>0 && before===N-1){
+    track.style.transform = horizontal?`translateX(${-N*size}px)`:`translateY(${-N*size}px)`;
+    layout(jump);
+    track.style.transform = horizontal?`translateX(${-N*size}px)`:`translateY(${-N*size}px)`;
+    setTimeout(()=>{ track.classList.add("noanim"); track.style.transform="translate(0,0)"; requestAnimationFrame(()=>requestAnimationFrame(()=>track.classList.remove("noanim"))); },1200);
+  }else if(dir<0 && before===0){
+    track.classList.add("noanim");
+    track.style.transform = horizontal?`translateX(${-N*size}px)`:`translateY(${-N*size}px)`;
+    track.offsetHeight; track.classList.remove("noanim");
+    layout(jump);
+  }else layout(jump);
+  if(user) restart();
+}
+
+// 자동 재생 + 진행바
+const DUR=2600; let timer, start, paused=false, raf;
+function restart(){ start=performance.now(); }
+function tick(now){
+  if(!paused){
+    const p=Math.min(1,(now-start)/DUR);
+    document.getElementById("bar").style.width=(p*100)+"%";
+    if(p>=1){ go(1); restart(); }
+  }else start=now-(parseFloat(document.getElementById("bar").style.width)||0)/100*DUR;
+  raf=requestAnimationFrame(tick);
+}
+rail.addEventListener("mouseenter",()=>paused=true);
+rail.addEventListener("mouseleave",()=>paused=false);
+document.getElementById("nextBtn").onclick=()=>go(1,true);
+document.getElementById("prevBtn").onclick=()=>go(-1,true);
+addEventListener("keydown",e=>{ if(e.key==="ArrowRight")go(1,true); if(e.key==="ArrowLeft")go(-1,true); });
+
+function sizeCards(){
+  if(mobile()){ track.style.removeProperty("--cardH"); }
+  else { const h=rail.clientHeight/2.35; cards.forEach(c=>c.style.setProperty("--cardH",h+"px")); }
+  const all=new Set(figs.map((_,i)=>i)); track.classList.add("noanim"); layout(all);
+  requestAnimationFrame(()=>track.classList.remove("noanim"));
+}
+addEventListener("resize",sizeCards);
+sizeCards(); restart(); raf=requestAnimationFrame(tick);
+</script>
+</body>
+</html>
