@@ -561,6 +561,10 @@ function sizeCards(){
   requestAnimationFrame(()=>track.classList.remove("noanim"));
 }
 addEventListener("resize",sizeCards);
+// 백그라운드 탭·숨은 창에서 열렸다가 보이게 될 때도 크기 다시 계산
+let lastW=0,lastH=0;
+if("ResizeObserver" in window){ new ResizeObserver(()=>{ if(rail.clientWidth!==lastW||rail.clientHeight!==lastH){ lastW=rail.clientWidth; lastH=rail.clientHeight; sizeCards(); } }).observe(rail); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ sizeCards(); restart(); } });
 sizeCards(); restart(); raf=requestAnimationFrame(tick);
 </script>
 </body>
