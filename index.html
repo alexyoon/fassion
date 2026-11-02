@@ -73,7 +73,11 @@
   .rail{position:relative;overflow:hidden;background:#f3f3f3;border-left:1px solid var(--line)}
   .track{position:absolute;left:0;right:0;top:0;transition:transform 1.15s var(--ease)}
   .track.noanim{transition:none}
-  .card{position:relative;height:var(--cardH,300px);background:var(--card);border-bottom:6px solid #f7f7f7;padding:16px 18px 16px;display:flex;flex-direction:column}
+  .group{height:var(--grpH,600px);display:flex;flex-direction:column;background:#f3f3f3}
+  .group .gh{display:flex;justify-content:space-between;align-items:baseline;padding:16px 18px 12px;font-size:10.5px;letter-spacing:.12em;color:#888}
+  .group .gh b{color:#111;font-weight:600}
+  .group .items{flex:1;display:flex;flex-direction:column;gap:6px;min-height:0}
+  .card{position:relative;flex:1;min-height:0;background:var(--card);padding:16px 18px 16px;display:flex;flex-direction:column}
   .card .img{flex:1;display:grid;place-items:center;min-height:0}
   .card .img svg{width:78%;max-height:100%;transition:transform .5s var(--ease)}
   .card:hover .img svg{transform:scale(1.06)}
@@ -106,7 +110,9 @@
     .copy{top:6%;max-width:72%}
     .rail{height:250px;border-left:0;border-top:1px solid var(--line)}
     .track{display:flex;height:100%;bottom:0}
-    .card{height:100%!important;width:var(--cardW,180px);flex:0 0 var(--cardW,180px);border-bottom:0;border-right:6px solid #f7f7f7}
+    .group{height:100%;width:var(--grpW,100vw);flex:0 0 var(--grpW,100vw)}
+    .group .items{flex-direction:row}
+    .card{flex:1}
     footer{flex-direction:column;gap:6px;padding:20px 16px}
   }
 </style>
@@ -419,22 +425,26 @@ const figs = LOOKS.map((L,i)=>{
   stage.appendChild(d); return d;
 });
 
-// cards (2 copies for seamless loop)
-function cardHTML(L,i){
-  const p=L.product;
-  return `<div class="card" data-i="${i}">
+// 오른쪽: 앞 모델이 입은 아이템만 (SHOP THE LOOK)
+LOOKS.forEach(L=>{ if(!L.items) L.items=[L.product]; });
+function cardHTML(p,i,j){
+  return `<div class="card" data-i="${i}" data-j="${j}">
     <button class="wish" aria-label="찜">${heart}</button>
     <div class="img">${p.img?`<img src="${p.img}" alt="${p.name}" loading="lazy">`:ART[p.art]}</div>
     <h3>${p.name}</h3><div class="meta">${p.meta}</div>
     <div class="row"><span>$${p.price}</span><button class="add" aria-label="장바구니 담기">+</button></div></div>`;
 }
-track.innerHTML = LOOKS.map(cardHTML).join("") + LOOKS.map(cardHTML).join("");
-const cards=[...track.children];
+function groupHTML(L,i){
+  return `<div class="group" data-i="${i}"><div class="gh"><span>SHOP THE LOOK</span><b>LOOK ${String(i+1).padStart(2,"0")}</b></div>
+    <div class="items">${L.items.map((p,j)=>cardHTML(p,i,j)).join("")}</div></div>`;
+}
+track.innerHTML = LOOKS.map(groupHTML).join("") + LOOKS.map(groupHTML).join("");
+const cards=[...track.children]; // groups
 let cart=0;
 track.addEventListener("click",e=>{
   const w=e.target.closest(".wish"); if(w){ w.classList.toggle("on"); toast(w.classList.contains("on")?"위시리스트에 담았습니다":"위시리스트에서 뺐습니다"); return; }
   const a=e.target.closest(".add");
-  if(a){ const p=LOOKS[a.closest(".card").dataset.i].product; cart++; const c=document.getElementById("cartCount"); c.textContent=cart; c.classList.add("bump"); setTimeout(()=>c.classList.remove("bump"),300); toast(`${p.name} — 장바구니에 담았습니다`); }
+  if(a){ const cd=a.closest(".card"); const p=LOOKS[cd.dataset.i].items[cd.dataset.j]; cart++; const c=document.getElementById("cartCount"); c.textContent=cart; c.classList.add("bump"); setTimeout(()=>c.classList.remove("bump"),300); toast(`${p.name} — 장바구니에 담았습니다`); }
 });
 let tt; function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),1800);}
 
@@ -478,7 +488,7 @@ function layout(instantSet){
   // rail
   const k=((t%N)+N)%N;
   const horizontal=mobile();
-  const size = horizontal ? cards[0].offsetWidth+6 : cards[0].offsetHeight;
+  const size = horizontal ? cards[0].offsetWidth : cards[0].offsetHeight;
   track.style.transform = horizontal ? `translateX(${-k*size}px)` : `translateY(${-k*size}px)`;
   cards.forEach((c,i)=>c.classList.toggle("active",i%N===k));
   // label
@@ -493,7 +503,7 @@ function go(dir,user){
   const k=((t%N)+N)%N;
   // 레일 무한 루프: 마지막→처음으로 넘어갈 때 복제본으로 이동 후 순간 복귀
   const horizontal=mobile();
-  const size = horizontal ? cards[0].offsetWidth+6 : cards[0].offsetHeight;
+  const size = horizontal ? cards[0].offsetWidth : cards[0].offsetHeight;
   // 뒤에서 앞으로 순간이동해야 하는 인물(대기열 끝 ↔ 퇴장)은 애니메이션 없이 이동
   const jump=new Set();
   figs.forEach((f,i)=>{
@@ -532,8 +542,8 @@ document.getElementById("prevBtn").onclick=()=>go(-1,true);
 addEventListener("keydown",e=>{ if(e.key==="ArrowRight")go(1,true); if(e.key==="ArrowLeft")go(-1,true); });
 
 function sizeCards(){
-  if(mobile()){ track.style.removeProperty("--cardH"); }
-  else { const h=rail.clientHeight/2.35; cards.forEach(c=>c.style.setProperty("--cardH",h+"px")); }
+  if(mobile()){ cards.forEach(c=>{c.style.removeProperty("--grpH"); c.style.setProperty("--grpW",rail.clientWidth+"px");}); }
+  else { cards.forEach(c=>{c.style.setProperty("--grpH",rail.clientHeight+"px"); c.style.removeProperty("--grpW");}); }
   const all=new Set(figs.map((_,i)=>i)); track.classList.add("noanim"); layout(all);
   requestAnimationFrame(()=>track.classList.remove("noanim"));
 }
